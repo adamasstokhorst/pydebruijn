@@ -142,6 +142,7 @@ def fetch_and_save(n):
                 data[int(key)] = int(value)
 
     file_path = os.path.abspath(os.path.dirname(__file__))
+    # TODO: possibly put the data in a subfolder
 
     # this shouldn't fail
     with bz2.BZ2File(os.path.join(file_path, 'zechdata_{}'.format(n)), 'w') as f:
