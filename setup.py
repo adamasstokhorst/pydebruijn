@@ -9,4 +9,5 @@ setup(name='pydebruijn',
       license='GPL',
       packages=['pydebruijn'],
       install_requires=['sympy', 'networkx'],
+      include_package_data=True,
       zip_safe=False)

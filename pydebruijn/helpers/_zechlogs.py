@@ -80,9 +80,11 @@ def retrieve_zech_log(p):
     modulus = 2**degree - 1
 
     file_path = os.path.abspath(os.path.dirname(__file__))
+    file_path = os.path.join(file_path, 'zechdata')
+    file_path = os.path.join(file_path, 'zechdata_{}'.format(degree))
 
     try:
-        with bz2.BZ2File(os.path.join(file_path, 'zechdata_{}'.format(degree)), 'r') as f:
+        with bz2.BZ2File(file_path, 'r') as f:
             s = pickle.load(f)
             base_poly = s['poly']
             base_data = s['data']
@@ -142,8 +144,9 @@ def fetch_and_save(n):
                 data[int(key)] = int(value)
 
     file_path = os.path.abspath(os.path.dirname(__file__))
-    # TODO: possibly put the data in a subfolder
+    file_path = os.path.join(file_path, 'zechdata')
+    file_path = os.path.join(file_path, 'zechdata_{}'.format(degree))
 
     # this shouldn't fail
-    with bz2.BZ2File(os.path.join(file_path, 'zechdata_{}'.format(n)), 'w') as f:
+    with bz2.BZ2File(file_path, 'w') as f:
         pickle.dump({'poly': p, 'data': data}, f, protocol=1)
