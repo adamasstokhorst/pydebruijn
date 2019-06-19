@@ -18,7 +18,20 @@ __all__ = ['DeBruijnPoly', 'DeBruijnZech']
 
 class DeBruijnPoly(object):
     def __init__(self, *args):
-        """ takes binary strings which are converted into polys """
+        """
+        Initializes a de Bruijn sequence generator.
+
+        This class makes use of irreducible binary polynomials to generate
+        de Bruijn sequences.
+
+        Parameters
+        ----------
+        args : binary string(s) (required)
+            Polynomials to be used to generate de Bruijn sequences.
+            Input polynomials must be irreducible; reducible polynomials
+            are silently ignored.  Coefficients are given in decreasing
+            power -- e.g. `x**3 + x + 1` is written as `1011`.
+        """
         if not args:
             raise ValueError('no arguments passed (at least 1 expected)')
 
@@ -56,7 +69,11 @@ class DeBruijnPoly(object):
         self.__initialize()
 
     def __initialize(self):
-        """ takes a seeded DeBruijn object and prepares it for generating sequences """
+        """
+        Method for actually initializing the de Bruijn sequence generator.
+
+        Users need not to run this method.
+        """
         # populate states
         self._associates = _get_associate_poly(self._polys)
         for entry in self._associates:
@@ -135,6 +152,15 @@ class DeBruijnPoly(object):
 
     # this could be done better?
     def __conjugate_pair_generator(self, all_pairs):
+        """
+        Method for generating conjugate pairs.
+
+        Users need not to run this method.
+
+        See also
+        --------
+        __initialize
+        """
         # notes: pairs_product = cartesian product of all the pairs of states for each polynomials,
         #                        i.e. it's a tuple of size s, where s is the number of polynomials
         #        pairs = a tuple of size s, entry at index i is a state-pair for i-th polynomial.
@@ -179,6 +205,15 @@ class DeBruijnPoly(object):
                         break
 
     def __param_generator(self, trees):
+        """
+        Method for generating sequence parameters from spanning trees.
+
+        Users need not to run this method.
+
+        See also
+        --------
+        __initialize
+        """
         for tree in trees:
             param_list = map(lambda a: [self._graph.get_edge_data(*a)[k]['shift'][a[0]]
                                         for k in self._graph.get_edge_data(*a)], tree)
@@ -186,6 +221,15 @@ class DeBruijnPoly(object):
                 yield tree, param
 
     def __get_algebraic_normal_form(self, tree, param):
+        """
+        Method for generating the algebraic normal form of the feedback shift register.
+
+        Users need not to run this method.
+
+        See also
+        --------
+        __initialize
+        """
         terms = [a[0][0] for a in self._poly.terms() if a[0][0] != self._order]
         anf = sum([self._sym[a] for a in terms])
 
@@ -206,41 +250,113 @@ class DeBruijnPoly(object):
 
     @property
     def polys(self):
+        """
+        Returns the list of polynomials used in constructing the sequence
+        generator.
+        """
         return self._polys
 
     @property
     def poly(self):
+        """
+        Returns the sequence's generating polynomial.
+
+        Equivalent to multiplying the elements of `.polys` together.
+        """
         return self._poly
 
     @property
     def order(self):
+        """
+        Returns the degree of the sequence's generating polynomial.
+
+        Equivalent to `.poly.degree()`.
+        """
         return self._order
 
     @property
     def adjacency_matrix(self):
+        """
+        Returns the adjacency matrix of the connectivity graph.
+        """
         return self._adjacency_matrix
 
     @property
     def fsr(self):
+        """
+        Returns the `FeedbackShiftRegister` object corresponding to the
+        current sequence.
+
+        See also
+        --------
+        FeedbackShiftRegister
+        """
         return self._fsr
 
     @property
     def state(self):
+        """
+        Returns the current state of the feedback shift register.
+        """
         return self.fsr.state
 
     @state.setter
     def state(self, iterable):
+        """
+        Sets the current state of the feedback shift register.
+
+        Parameters
+        ----------
+        iterable : any iterable object
+            Replace the current state with this iterable.  The resulting
+            state may not be the same as the given iterable.
+
+        See also
+        --------
+        FeedbackShiftRegister
+        """
         self.fsr.state = iterable
 
     def next_sequence(self):
+        """
+        Changes the parameters of the generator to generate a different
+        sequence.
+
+        Raises
+        ------
+        StopIteration
+            If the connectivity graph has yielded all possible
+            spanning trees.
+        """
         # Method will raise StopIteration when sequences are exhausted, don't forget to handle it.
         anf = self.__get_algebraic_normal_form(*self._param_generator.next())
         self._fsr = _FSR(anf, order=self._order, init_state=self._state)
 
 
 class DeBruijnZech(object):
-    def __init__(self, p, t, auto_arm=True):
-        """ p an instance of sympy.Poly, t must be an appropriate decimation value. """
+    def __init__(self, p, t):
+        """
+        Initializes a de Bruijn sequence generator.
+
+        This class makes use of Zech logarithms to generate
+        de Bruijn sequences.
+
+        Parameters
+        ----------
+        p : Sympy.Poly object (required)
+            A primitive binary polynomial.
+
+        t : integer (required)
+            The decimation value to be applied to `p`.  If `p` is of
+            degree `n`, this value must necessarily divide `2**n - 1`,
+            but this is not a sufficient requirement.
+
+        Raises
+        ------
+        ValueError
+            If `p` is not primitive, or if `t` does not fulfill
+            a certain criterion.
+        """
         # properties modifiable by user
         self._state = None
 
@@ -260,17 +376,19 @@ class DeBruijnZech(object):
             raise ValueError('polynomial not primitive: {}'.format(p.as_expr()))
         if (2 ** self._order - 1) % t != 0 or _poly_decimation(p, t) is None:
             raise ValueError('inappropriate t-value: {}'.format(t))
-        # TODO: some inappropriate t value still passes
 
         self._state = [0] * self._order
         self._sym = _sympy.symbols('x_:{}'.format(self._order), integer=True)
         self._poly = _poly_decimation(p, t)
 
-        self.__initialize(auto_arm)
+        self.__initialize()
 
-    def __initialize(self, auto_arm):
-        """takes a seeded DeBruijn object and prepares it for generating sequences.
-        if auto_arm is set to False, .next_sequence() must be called first before it is ready to use."""
+    def __initialize(self):
+        """
+        Method for actually initializing the de Bruijn sequence generator.
+
+        Users need not to run this method.
+        """
         # populate states
         degree = self._order
         init_state = _get_special_state(self._associate, self._t_value)
@@ -295,11 +413,20 @@ class DeBruijnZech(object):
         simple_graph = _nx.Graph(self._graph)
         self._param_generator = self.__param_generator(_spanning_trees(simple_graph))
 
-        if auto_arm:
-            anf = self.__get_algebraic_normal_form(*self._param_generator.next())
-            self._fsr = _FSR(anf, order=self._order, init_state=self._state)
+        # if auto_arm:
+        #     anf = self.__get_algebraic_normal_form(*self._param_generator.next())
+        #     self._fsr = _FSR(anf, order=self._order, init_state=self._state)
 
     def __param_generator(self, trees):
+        """
+        Method for generating sequence parameters from spanning trees.
+
+        Users need not to run this method.
+
+        See also
+        --------
+        __initialize
+        """
         for tree in trees:
             param_list = map(lambda a: [self._graph.get_edge_data(*a)[k]['shift'][a[0]]
                                         for k in self._graph.get_edge_data(*a)], tree)
@@ -307,6 +434,15 @@ class DeBruijnZech(object):
                 yield tree, param
 
     def __get_algebraic_normal_form(self, tree, param):
+        """
+        Method for generating the algebraic normal form of the feedback shift register.
+
+        Users need not to run this method.
+
+        See also
+        --------
+        __initialize
+        """
         from .helpers import powerset
 
         terms = [a[0][0] for a in self._poly.terms() if a[0][0] != self._order]
@@ -326,29 +462,76 @@ class DeBruijnZech(object):
 
     @property
     def poly(self):
+        """
+        Returns the sequence's generating polynomial.
+
+        Equivalent to applying `t`-decimation to `p`.
+        """
         return self._poly
 
     @property
     def order(self):
+        """
+        Returns the degree of the sequence's generating polynomial.
+
+        Equivalent to `.poly.degree()`.
+        """
         return self._order
 
     @property
     def adjacency_matrix(self):
+        """
+        Returns the adjacency matrix of the connectivity graph.
+        """
         return self._adjacency_matrix
 
     @property
     def fsr(self):
+        """
+        Returns the `FeedbackShiftRegister` object corresponding to the
+        current sequence.
+
+        See also
+        --------
+        FeedbackShiftRegister
+        """
         return self._fsr
 
     @property
     def state(self):
+        """
+        Returns the current state of the feedback shift register.
+        """
         return self.fsr.state
 
     @state.setter
     def state(self, iterable):
+        """
+        Sets the current state of the feedback shift register.
+
+        Parameters
+        ----------
+        iterable : any iterable object
+            Replace the current state with this iterable.  The resulting
+            state may not be the same as the given iterable.
+
+        See also
+        --------
+        FeedbackShiftRegister
+        """
         self.fsr.state = iterable
 
     def next_sequence(self):
+        """
+        Changes the parameters of the generator to generate a different
+        sequence.
+
+        Raises
+        ------
+        StopIteration
+            If the connectivity graph has yielded all possible
+            spanning trees.
+        """
         # Method will raise StopIteration when sequences are exhausted, don't forget to handle it.
         anf = self.__get_algebraic_normal_form(*self._param_generator.next())
         self._fsr = _FSR(anf, order=self._order, init_state=self._state)
