@@ -1,3 +1,6 @@
+"""
+Classes for de Bruijn sequence generators based on cycle-joining method.
+"""
 import sympy as _sympy
 import networkx as _nx
 import itertools as _iters
@@ -26,7 +29,7 @@ class DeBruijnPoly(object):
 
         Parameters
         ----------
-        args : binary string(s) (required)
+        args : binary string(s)
             Polynomials to be used to generate de Bruijn sequences.
             Input polynomials must be irreducible; reducible polynomials
             are silently ignored.  Coefficients are given in decreasing
@@ -343,10 +346,10 @@ class DeBruijnZech(object):
 
         Parameters
         ----------
-        p : Sympy.Poly object (required)
+        p : Sympy.Poly object
             A primitive binary polynomial.
 
-        t : integer (required)
+        t : integer
             The decimation value to be applied to `p`.  If `p` is of
             degree `n`, this value must necessarily divide `2**n - 1`,
             but this is not a sufficient requirement.

@@ -1,13 +1,35 @@
 import sympy
 from sympy.abc import x
 from ._misc import hamming_weight
+from ._zechlogs import get_representatives
 
 __all__ = ['is_primitive', 'generate_primitives', 'get_associate_poly',
            'lfsr_from_poly', 'seq_decimation', 'poly_decimation', 'get_special_state']
 
 
 def is_primitive(poly):
-    """Check whether a binary polynomial is primitive over GF(2).
+    """
+    Checks whether a binary polynomial is primitive over GF(2).
+
+    Parameters
+    ----------
+    poly : SymPy polynomial
+        The polynomial must be using `x` as its generator and has
+        `modulus` set to 2.
+
+    Returns
+    -------
+    b : boolean
+        True if `poly` is primitive over GF(2), False otherwise.
+
+    Examples
+    --------
+    >>> is_primitive(sympy.Poly(x**3 + x + 1, x, modulus=2))
+    True
+    >>> is_primitive(sympy.Poly(x**4 + 1, x, modulus=2))  # reducible
+    False
+    >>> is_primitive(sympy.Poly(x**4 + x**3 + x**2 + x + 1, x, modulus=2))  # irreducible non-primitive
+    False
     """
     if not poly.is_irreducible:
         return False
@@ -24,11 +46,30 @@ def is_primitive(poly):
 
 
 def generate_primitives(degree, limit=None):
-    """Return a list of (possibly all) primitive polynomials over GF(2) of a given degree.
+    """
+    Returns a list of primitive polynomials of a given degree.
+
+    This function searches for the first primitive polynomial using
+    brute force, and then uses decimations to obtain the rest.
+
+    Parameters
+    ----------
+    degree : integer
+        The degree of polynomials to be returned.
+
+    limit : integer, optional (default=None)
+        If None, returns all primitive polynomials of the given degree.
+        Otherwise, returns at most `limit` polynomials.
+
+    Returns
+    -------
+    l : list
+        List of primitive polynomials of degree `degree`.
     """
     if degree == 1:
         return [sympy.Poly(x+1, x, modulus=2)]
 
+    poly = None
     for k in xrange(1, 2**(degree-1)):
         if hamming_weight(k) % 2 == 1:
             if int(bin(k)[:1:-1] + '0' * (degree - int(sympy.log(k, 2)) - 2), 2) < k:
@@ -46,26 +87,40 @@ def generate_primitives(degree, limit=None):
             if is_primitive(poly):
                 break
 
-    # TODO: use get representatives from _zechlogs.py?
-    decimations = []
-    for k in range(1, 2**(degree-1)):
-        if sympy.gcd(k, 2**degree - 1) != 1:
-            continue
-        is_new_coset = True
-        for i in range(1, degree):
-            if (k * 2**i) % (2**degree - 1) in decimations:
-                is_new_coset = False
-                break
-        if is_new_coset:
-            decimations.append(k)
-        if len(decimations) >= limit:
-            break
+    decimations = get_representatives(degree)[:limit]
+    temp_out = [poly_decimation(poly, t) for t in decimations if sympy.gcd(t, 2**degree - 1) == 1]
 
-    return sorted(map(lambda a: poly_decimation(poly, a), decimations), key=lambda a: a.all_coeffs())
+    return sorted(temp_out, key=lambda a: a.all_coeffs())
 
 
 def get_associate_poly(poly_list):
-    """Compute associate primitive polynomials for all polynomials in a given list.
+    """
+    Computes the associates of polynomials in a list.
+
+    The associate polynomial of a polynomial `p` is defined as the
+    primitive polynomial which yields `p` when decimated by a certain
+    value `t`, also called its order.
+
+    Parameters
+    ----------
+    poly_list : list of SymPy polynomials
+        The polynomials must be using `x` as its generator and has
+        `modulus` set to 2.
+
+    Returns
+    -------
+    associates : list of dict
+        The dictionary will have four keys:
+
+        - 'poly' : the original polynomial
+        - 'associate' : the associate polynomial
+        - 'order' : the `t` value such that when t-decimated, the
+          associate polynomial yields the input polynomial
+        - 'period' : the period of the LFSR corresponding to the
+          input polynomial
+
+        The elements of this list will correspond to the elements of
+        `poly_list` in the same order.
     """
     associates = []
     indexes = []
@@ -112,7 +167,31 @@ def get_associate_poly(poly_list):
 
 
 def lfsr_from_poly(poly, state):
-    """Compute the next state of a LFSR with a given feedback polynomial.
+    r"""
+    Computes the next state of a LFSR with a given feedback polynomial.
+
+    If the polynomial given as :math:`x^n + a_{n-1}x_^{n-1} + \ldots + a_0`
+    and state is given as :math:`(s_0, s_1, \ldots, s_{n-1})`, then
+    the next bit is computed as
+
+    .. math::
+
+        \textup{next\_bit} = a_{n-1}s_0 + a_{n-2}s_1 + \dots + a_0s_{n-1}.
+
+    Parameters
+    ----------
+    poly : SymPy polynomial
+        The binary polynomial corresponding to the LFSR. Note that
+        this module takes the leading term as a dummy term, and
+
+    state : list
+        This list is expected to only contain 0 or 1, and its length
+        must match the degree of the polynomial.
+
+    Returns
+    -------
+    next_state : list
+        The state succeeding `state` under the given LFSR.
     """
     lfsr = list(reversed(poly.all_coeffs()))[:-1]
     next_state = state + [sum(map(lambda a, b: a & int(b), state, lfsr)) % 2]
@@ -120,7 +199,32 @@ def lfsr_from_poly(poly, state):
 
 
 def seq_decimation(p, t, offset=0, c_state=None):
-    """Return the t-decimated sequence of a polynomial.
+    r"""
+    Decimates the sequence corresponding to the given polynomial.
+
+    If the sequence is :math:'\{a_n\}', then a k-decimation is defined
+    as the subsequence :math:'\{a_kn\}'.
+
+    Parameters
+    ----------
+    p : SymPy polynomial
+        A binary polynomial corresponding to a LFSR.
+
+    t : integer
+        The decimation value.
+
+    offset : integer, optional (default=0)
+        Shift the sequence by this amount before decimating.
+
+    c_state : list, optional (default=None)
+        The initial state of the LFSR.  It must be the same length as
+        the degree of `p` and contains only 0 or 1.  If None, the
+        initial state will all 1s.
+
+    Returns
+    -------
+    l : list
+        The decimated sequence.
     """
     deg = sympy.degree(p)
     if c_state is None:
@@ -145,7 +249,27 @@ def seq_decimation(p, t, offset=0, c_state=None):
 
 
 def poly_decimation(p, t):
-    """Return the t-decimated polynomial of a polynomial.
+    """
+    Decimates the given polynomial and returns another polynomial.
+
+    This function decimates the calculated sequence and reconstructs
+    the polynomial corresponding to that sequence using the
+    Berlekamp-Massey algorithm.
+
+    Parameters
+    ----------
+    p : SymPy polynomial
+        A binary polynomial corresponding to a LFSR.
+
+    t : integer
+        The decimation value.
+
+    Returns
+    -------
+    q : SymPy polynomial
+        The polynomial corresponding to the decimated sequence.
+        Note that if the degree of `q` does not equal the degree of `p`,
+        this function returns None.
     """
     from operator import mul
     n = sympy.degree(p)
@@ -175,6 +299,27 @@ def poly_decimation(p, t):
 
 
 def get_special_state(p, t):
+    """
+    Finds the special state corresponding to a decimated polynomial.
+
+    The special state is such that when the sequence corresponding
+    to `p` is decimated with the special state as the initial state,
+    the state yielded with zero offset is the conjugate state to
+    the zero state.
+
+    Parameters
+    ----------
+    p : SymPy polynomial
+        A primitive binary polynomial.
+
+    t : integer
+        The decimation value.
+
+    Returns
+    -------
+    l : list
+        The special state.
+    """
     # TODO: rewrite this function to be more clear
     from operator import add
     deg = sympy.degree(p)
