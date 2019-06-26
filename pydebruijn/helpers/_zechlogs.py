@@ -2,12 +2,52 @@ __all__ = ['ZechContainer', 'get_representatives', 'get_decimation_value', 'retr
 
 
 class ZechContainer(dict):
+    """
+    A dict-like class for storing and accessing Zech's logarithm values.
+
+    This class is more space-efficient than storing all Zech's logarithm
+    values, as it takes advantage of the property that
+    :math:`Z(2n) = 2Z(n)`, where :math:`Z(n)` is the Zech's logarithm of
+    :math:`n`.
+
+    Parameters
+    ----------
+    order : integer
+        Determines size of the finite field, which will be GF(2^`order`).
+    """
     def __init__(self, order):
+        """
+        Initializes the Zech's logarithm container
+
+        Parameters
+        ----------
+        order : integer
+            Determines size of the finite field, which will be GF(2^`order`).
+        """
         self._ord = order
         self._modulo = 2 ** order - 1
         super(ZechContainer, self).__init__()
 
     def __getitem__(self, key):
+        """
+        Returns the Zech's logarithm of a given number.
+
+        If the given number is not present in the internal dictionary,
+        a coset containing the number will be searched for.
+
+        Parameters
+        ----------
+        key : integer
+
+        Returns
+        -------
+        val : integer
+
+        Raises
+        ------
+        KeyError
+            If `key` does not belong in any coset.
+        """
         if key in self:
             return super(ZechContainer, self).__getitem__(key)
         else:
@@ -26,6 +66,22 @@ class ZechContainer(dict):
 
 
 def get_representatives(n):
+    r"""
+    Reduces integers in :math:`[1, 2^n - 2]` into coset representatives.
+
+    The cosets here are induced under the equivalence relation where
+    :math:`a \sim b` iff :math:`a \equiv 2^k b \mod 2^n - 1`.
+    The representatives are the smallest member of each coset.
+
+    Parameters
+    ----------
+    n : integer
+
+    Returns
+    -------
+    cosets : list
+        The list of representatives of the cosets.
+    """
     import collections
 
     modulus = 2**n - 1
@@ -46,7 +102,26 @@ def get_representatives(n):
 
 
 def get_decimation_value(p, q):
-    # returns t such that p decimated by t is q
+    """
+    Calculates the decimation value between two polynomials.
+
+    The decimation value here is `t` such that when `p` is t-decimated,
+    the resulting polynomial is `q`.  In here, both `p` and `q` must be
+    polynomials over GF(2).
+
+    Parameters
+    ----------
+    p : SymPy polynomial
+        The reference polynomial.
+
+    q : SymPy polynomial
+        The polynomial to be checked against `p`.
+
+    Returns
+    -------
+    t : integer or None
+        If None, then there is no such `t`.
+    """
     import sympy
     from ._binarypoly import poly_decimation
 
@@ -71,6 +146,28 @@ def get_decimation_value(p, q):
 
 
 def retrieve_zech_log(p):
+    """
+    Reads Zech's logarithm values from disk and returns it.
+
+    This function relies on data stored in `helpers/zechdata/`.
+    This package comes with pre-computed data up to GF(2^20).
+
+    Parameters
+    ----------
+    p : SymPy polynomial
+        Primitive polynomial over GF(2) whose root will be used
+        as a basis of the logarithm.
+
+    Returns
+    -------
+    data : ZechContainer
+        A dict-like object storing the Zech's logarithm data.
+
+    Raises
+    ------
+    IOError
+        If data is non-existent or cannot be read.
+    """
     import os
     import pickle
     import bz2
@@ -106,6 +203,19 @@ def retrieve_zech_log(p):
 
 
 def fetch_and_save(n):
+    """
+    Fetches Zech's logarithm values and saves it to disk.
+
+    As this package already comes for values up to GF(2^20), ideally
+    users need not to call this function, but it is provided for
+    completion.  Requires the packages `requests` and `lxml`.
+
+    Parameters
+    ----------
+    n : integer
+        The Zech's logarithm value for GF(2^n) will be fetched.
+        Results are stored in `helpers/zechdata/zechdata_[n]`.
+    """
     import os
     import pickle
     import itertools
@@ -145,7 +255,7 @@ def fetch_and_save(n):
 
     file_path = os.path.abspath(os.path.dirname(__file__))
     file_path = os.path.join(file_path, 'zechdata')
-    file_path = os.path.join(file_path, 'zechdata_{}'.format(degree))
+    file_path = os.path.join(file_path, 'zechdata_{}'.format(n))
 
     # this shouldn't fail
     with bz2.BZ2File(file_path, 'w') as f:

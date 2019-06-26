@@ -19,7 +19,7 @@ def is_primitive(poly):
 
     Returns
     -------
-    b : boolean
+    b : bool
         True if `poly` is primitive over GF(2), False otherwise.
 
     Examples

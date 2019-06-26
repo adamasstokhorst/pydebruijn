@@ -1,5 +1,10 @@
 """
 Classes for de Bruijn sequence generators based on cycle-joining method.
+
+There are two classes available, DeBruijnPoly and DeBruijnZech.
+
+DeBruijnPoly makes direct use of irreducible polynomials, while
+DeBruijnZech uses Zech's logarithms to quickly generate sequences.
 """
 import sympy as _sympy
 import networkx as _nx
@@ -20,12 +25,24 @@ __all__ = ['DeBruijnPoly', 'DeBruijnZech']
 
 
 class DeBruijnPoly(object):
+    """
+    Class for generating de Bruijn sequences with product of
+    irreducible polynomials.
+
+    This class can be used without importing SymPy, as it accepts
+    binary strings which it then internally converts into polynomials.
+
+    Parameters
+    ----------
+    args : binary string(s)
+        Polynomials to be used to generate de Bruijn sequences.
+        Input polynomials must be irreducible; reducible polynomials
+        are silently ignored.  Coefficients are given in decreasing
+        power -- e.g. `x**3 + x + 1` is written as `1011`.
+    """
     def __init__(self, *args):
         """
         Initializes a de Bruijn sequence generator.
-
-        This class makes use of irreducible binary polynomials to generate
-        de Bruijn sequences.
 
         Parameters
         ----------
@@ -337,12 +354,25 @@ class DeBruijnPoly(object):
 
 
 class DeBruijnZech(object):
+    """
+    Class for generating de Bruijn sequences using Zech's logarithms.
+
+    This class uses stored Zech's logarithm values, as it is rather
+    expensive to compute them on the fly.
+
+    Parameters
+    ----------
+    p : Sympy.Poly object
+        A primitive binary polynomial.
+
+    t : integer
+        The decimation value to be applied to `p`.  If `p` is of
+        degree `n`, this value must necessarily divide `2**n - 1`,
+        but this is not a sufficient requirement.
+    """
     def __init__(self, p, t):
         """
         Initializes a de Bruijn sequence generator.
-
-        This class makes use of Zech logarithms to generate
-        de Bruijn sequences.
 
         Parameters
         ----------

@@ -12,11 +12,11 @@ def toggle_anf(anf, order=None):
     ----------
     anf : algebraic normal form
         A SymPy expression describing the algebraic normal form of a
-        feedback shift register. Must be using integer symbols named
+        feedback shift register.  Must be using integer symbols named
         `x_k`, where `k=0, 1, ...`.
 
     order : integer, optional (default=None)
-        The order of `anf`. If None, then it will be deduced from `anf`.
+        The order of `anf`.  If None, then it will be deduced from `anf`.
 
     Returns
     -------
@@ -52,7 +52,7 @@ def order_from_anf(anf):
     ----------
     anf : algebraic normal form
         A SymPy expression describing the algebraic normal form of a
-        feedback shift register. Must be using integer symbols named
+        feedback shift register.  Must be using integer symbols named
         `x_k`, where `k=0, 1, ...`.
 
     Returns

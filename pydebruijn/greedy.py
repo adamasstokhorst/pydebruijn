@@ -6,7 +6,34 @@ __all__ = ['gpo']
 
 
 def gpo(func, init_state, order=None):
-    """Implementation of Generalized Prefer-Opposite algorithm.
+    """
+    Implementation of Generalized Prefer-Opposite algorithm.
+
+    Parameters
+    ----------
+    func : algebraic normal form
+        A SymPy expression describing the algebraic normal form of a
+        feedback shift register.  Must be using integer symbols named
+        `x_k`, where `k=0, 1, ...`.
+
+    init_state : initial state
+        A list containing only 0s and 1s as its elements.  Must be the
+        same length as the order of `func`.
+
+    order : integer, optional (default=None)
+        The order of the algebraic normal form. If None, then it will
+        be deduced from `func`.
+
+    Returns
+    -------
+    fsr : FeedbackShiftRegister object
+        This FSR will be using the given algebraic normal form
+        at its core.
+
+    Raises
+    ------
+    ValueError
+        If the length of `init_state` is less than the order of the FSR.
     """
     if order is None:
         order = _order_from_anf(func)
@@ -19,9 +46,9 @@ def gpo(func, init_state, order=None):
     seq = ''.join(map(str, state))
 
     # DEBUG
-    step = 0
+    # step = 0
     while True:
-        step += 1
+        # step += 1
 
         args = zip(syms, state)
         next_bit = int(func.subs(args)) % 2
@@ -32,7 +59,7 @@ def gpo(func, init_state, order=None):
         seq += str(state[-1])
         table[''.join(map(str, state[:-1]))] = state[-1] ^ last_bit
         if len(table) == 2**(order - 1):
-            print step
+            # print step
             break
 
     return _FSR(_anf_from_truth_table(table, order), order, [0] * order)

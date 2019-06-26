@@ -2,7 +2,22 @@ __all__ = ['powerset', 'hamming_weight']
 
 
 def powerset(iterable, reverse=True):
-    """Return a generator that yields all subsets in decreasing order.
+    """
+    Returns a generator that yields all subsets of an iterable.
+
+    This recipe originated from Python 2's itertools documentation.
+
+    Parameters
+    ----------
+    iterable : any iterable object
+
+    reverse : bool (default=True)
+        If True, yields subsets in decreasing order.
+
+    Yields
+    ------
+    subset : tuple
+        A subset of `iterable`.
     """
     import itertools
     s = list(iterable)
@@ -13,7 +28,11 @@ def powerset(iterable, reverse=True):
 
 
 def hamming_weight(n):
-    """Calculate the Hamming weight of a positive integer.
+    """
+    Calculates the Hamming weight of a positive integer.
+
+    The Hamming weight of an integer is defined as the number of
+    1s in its binary representation.
     """
     c = 0
     while n:
