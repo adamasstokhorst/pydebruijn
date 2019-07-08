@@ -199,7 +199,7 @@ class FeedbackShiftRegister(object):
 
         Returns
         -------
-        next_bit : list
+        next_bit : int
             The next bit of the feedback shift register.
 
         See also
