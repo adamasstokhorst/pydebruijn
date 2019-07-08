@@ -447,8 +447,8 @@ class DeBruijnZech(object):
         self._param_generator = self.__param_generator(_spanning_trees(simple_graph))
 
         # if auto_arm:
-        #     anf = self.__get_algebraic_normal_form(*self._param_generator.next())
-        #     self._fsr = _FSR(anf, order=self._order, init_state=self._state)
+        anf = self.__get_algebraic_normal_form(*self._param_generator.next())
+        self._fsr = _FSR(anf, order=self._order, init_state=self._state)
 
     def __param_generator(self, trees):
         """
