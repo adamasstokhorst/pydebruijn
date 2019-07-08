@@ -35,7 +35,7 @@ def spanning_trees(graph, verts_in=None, edge_list=None, cur_vert=0):
         A list of edges in the spanning tree as pairs of vertices.
     """
     if edge_list is None:
-        degree_one = [n for n, d in graph.degree if d == 1]
+        degree_one = [n for n, d in graph.degree() if d == 1]
         init_vert = []
         init_edge = []
         start_index = 0
