@@ -1,0 +1,466 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>API Documentation &#8212; pydebruijn 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Welcome to pydebruijn’s documentation!" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="api-documentation">
+<h1>API Documentation<a class="headerlink" href="#api-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+</div>
+<span class="target" id="module-pydebruijn"></span><dl class="class">
+<dt id="pydebruijn.DeBruijnPoly">
+<em class="property">class </em><code class="descclassname">pydebruijn.</code><code class="descname">DeBruijnPoly</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="headerlink" href="#pydebruijn.DeBruijnPoly" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class for generating de Bruijn sequences with product of
+irreducible polynomials.</p>
+<p>This class can be used without importing SymPy, as it accepts
+binary strings which it then internally converts into polynomials.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>args</strong> (<em>binary string</em><em>(</em><em>s</em><em>)</em><em></em>) &#8211; Polynomials to be used to generate de Bruijn sequences.
+Input polynomials must be irreducible; reducible polynomials
+are silently ignored.  Coefficients are given in decreasing
+power &#8211; e.g. <cite>x**3 + x + 1</cite> is written as <cite>1011</cite>.</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="pydebruijn.DeBruijnPoly.adjacency_matrix">
+<code class="descname">adjacency_matrix</code><a class="headerlink" href="#pydebruijn.DeBruijnPoly.adjacency_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the adjacency matrix of the connectivity graph.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pydebruijn.DeBruijnPoly.fsr">
+<code class="descname">fsr</code><a class="headerlink" href="#pydebruijn.DeBruijnPoly.fsr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the <cite>FeedbackShiftRegister</cite> object corresponding to the
+current sequence.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#pydebruijn.FeedbackShiftRegister" title="pydebruijn.FeedbackShiftRegister"><code class="xref py py-obj docutils literal"><span class="pre">FeedbackShiftRegister</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pydebruijn.DeBruijnPoly.next_sequence">
+<code class="descname">next_sequence</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pydebruijn.DeBruijnPoly.next_sequence" title="Permalink to this definition">¶</a></dt>
+<dd><p>Changes the parameters of the generator to generate a different
+sequence.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">StopIteration</span></code> &#8211; If the connectivity graph has yielded all possible
+spanning trees.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pydebruijn.DeBruijnPoly.order">
+<code class="descname">order</code><a class="headerlink" href="#pydebruijn.DeBruijnPoly.order" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the degree of the sequence&#8217;s generating polynomial.</p>
+<p>Equivalent to <cite>.poly.degree()</cite>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pydebruijn.DeBruijnPoly.poly">
+<code class="descname">poly</code><a class="headerlink" href="#pydebruijn.DeBruijnPoly.poly" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the sequence&#8217;s generating polynomial.</p>
+<p>Equivalent to multiplying the elements of <cite>.polys</cite> together.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pydebruijn.DeBruijnPoly.polys">
+<code class="descname">polys</code><a class="headerlink" href="#pydebruijn.DeBruijnPoly.polys" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the list of polynomials used in constructing the sequence
+generator.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pydebruijn.DeBruijnPoly.state">
+<code class="descname">state</code><a class="headerlink" href="#pydebruijn.DeBruijnPoly.state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the current state of the feedback shift register.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pydebruijn.DeBruijnZech">
+<em class="property">class </em><code class="descclassname">pydebruijn.</code><code class="descname">DeBruijnZech</code><span class="sig-paren">(</span><em>p</em>, <em>t</em><span class="sig-paren">)</span><a class="headerlink" href="#pydebruijn.DeBruijnZech" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class for generating de Bruijn sequences using Zech&#8217;s logarithms.</p>
+<p>This class uses stored Zech&#8217;s logarithm values, as it is rather
+expensive to compute them on the fly.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>p</strong> (<em>Sympy.Poly object</em>) &#8211; A primitive binary polynomial.</li>
+<li><strong>t</strong> (<em>integer</em>) &#8211; The decimation value to be applied to <cite>p</cite>.  If <cite>p</cite> is of
+degree <cite>n</cite>, this value must necessarily divide <cite>2**n - 1</cite>,
+but this is not a sufficient requirement.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="pydebruijn.DeBruijnZech.adjacency_matrix">
+<code class="descname">adjacency_matrix</code><a class="headerlink" href="#pydebruijn.DeBruijnZech.adjacency_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the adjacency matrix of the connectivity graph.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pydebruijn.DeBruijnZech.fsr">
+<code class="descname">fsr</code><a class="headerlink" href="#pydebruijn.DeBruijnZech.fsr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the <cite>FeedbackShiftRegister</cite> object corresponding to the
+current sequence.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#pydebruijn.FeedbackShiftRegister" title="pydebruijn.FeedbackShiftRegister"><code class="xref py py-obj docutils literal"><span class="pre">FeedbackShiftRegister</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pydebruijn.DeBruijnZech.next_sequence">
+<code class="descname">next_sequence</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pydebruijn.DeBruijnZech.next_sequence" title="Permalink to this definition">¶</a></dt>
+<dd><p>Changes the parameters of the generator to generate a different
+sequence.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">StopIteration</span></code> &#8211; If the connectivity graph has yielded all possible
+spanning trees.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pydebruijn.DeBruijnZech.order">
+<code class="descname">order</code><a class="headerlink" href="#pydebruijn.DeBruijnZech.order" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the degree of the sequence&#8217;s generating polynomial.</p>
+<p>Equivalent to <cite>.poly.degree()</cite>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pydebruijn.DeBruijnZech.poly">
+<code class="descname">poly</code><a class="headerlink" href="#pydebruijn.DeBruijnZech.poly" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the sequence&#8217;s generating polynomial.</p>
+<p>Equivalent to applying <cite>t</cite>-decimation to <cite>p</cite>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pydebruijn.DeBruijnZech.state">
+<code class="descname">state</code><a class="headerlink" href="#pydebruijn.DeBruijnZech.state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the current state of the feedback shift register.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pydebruijn.FeedbackShiftRegister">
+<em class="property">class </em><code class="descclassname">pydebruijn.</code><code class="descname">FeedbackShiftRegister</code><span class="sig-paren">(</span><em>anf</em>, <em>order=None</em>, <em>init_state=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pydebruijn.FeedbackShiftRegister" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class for implementing feedback shift registers.</p>
+<p>This class does not check for validity of its inputs.  Users may
+invoke the constructor but must take care to provide valid inputs.</p>
+<dl class="method">
+<dt id="pydebruijn.FeedbackShiftRegister.advance">
+<code class="descname">advance</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pydebruijn.FeedbackShiftRegister.advance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Advances the current state of feedback shift register by one step.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#pydebruijn.FeedbackShiftRegister.next_state" title="pydebruijn.FeedbackShiftRegister.next_state"><code class="xref py py-meth docutils literal"><span class="pre">next_state()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pydebruijn.FeedbackShiftRegister.anf">
+<code class="descname">anf</code><a class="headerlink" href="#pydebruijn.FeedbackShiftRegister.anf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the algebraic normal form of the feedback shift register.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>anf</strong> &#8211; The algebraic normal form as a SymPy expression.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">algebraic normal form</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#pydebruijn.FeedbackShiftRegister.modified_anf" title="pydebruijn.FeedbackShiftRegister.modified_anf"><code class="xref py py-obj docutils literal"><span class="pre">modified_anf</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pydebruijn.FeedbackShiftRegister.anf_degree">
+<code class="descname">anf_degree</code><a class="headerlink" href="#pydebruijn.FeedbackShiftRegister.anf_degree" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the degree of the algebraic normal form.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>degree</strong> &#8211; The degree of the algebraic normal form.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">integer</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#pydebruijn.FeedbackShiftRegister.anf" title="pydebruijn.FeedbackShiftRegister.anf"><code class="xref py py-obj docutils literal"><span class="pre">anf</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pydebruijn.FeedbackShiftRegister.bit">
+<code class="descname">bit</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pydebruijn.FeedbackShiftRegister.bit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the next bit of feedback shift register.</p>
+<p>This method modifies the current state of the feedback shift
+register as a side-effect.</p>
+<p>This method is synonymous with <cite>fsr.next_state()[-1]</cite>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>next_bit</strong> &#8211; The next bit of the feedback shift register.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#pydebruijn.FeedbackShiftRegister.next_state" title="pydebruijn.FeedbackShiftRegister.next_state"><code class="xref py py-meth docutils literal"><span class="pre">next_state()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pydebruijn.FeedbackShiftRegister.modified_anf">
+<code class="descname">modified_anf</code><a class="headerlink" href="#pydebruijn.FeedbackShiftRegister.modified_anf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the algebraic normal form of the feedback shift register
+with the zero cycle removed, if present, and vice-versa.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>mod_anf</strong> &#8211; The modified algebraic normal form.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">algebraic normal form</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#pydebruijn.FeedbackShiftRegister.anf" title="pydebruijn.FeedbackShiftRegister.anf"><code class="xref py py-obj docutils literal"><span class="pre">anf</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pydebruijn.FeedbackShiftRegister.modified_anf_degree">
+<code class="descname">modified_anf_degree</code><a class="headerlink" href="#pydebruijn.FeedbackShiftRegister.modified_anf_degree" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the degree of the modified algebraic normal form.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>degree</strong> &#8211; The degree of the modified algebraic normal form.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">integer</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#pydebruijn.FeedbackShiftRegister.modified_anf" title="pydebruijn.FeedbackShiftRegister.modified_anf"><code class="xref py py-obj docutils literal"><span class="pre">modified_anf</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pydebruijn.FeedbackShiftRegister.next_state">
+<code class="descname">next_state</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pydebruijn.FeedbackShiftRegister.next_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the state after the current state of the
+feedback shift register.</p>
+<p>This method modifies the current state of the feedback shift
+register as a side-effect.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>next_state</strong> &#8211; The next state of the feedback shift register.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#pydebruijn.FeedbackShiftRegister.advance" title="pydebruijn.FeedbackShiftRegister.advance"><code class="xref py py-meth docutils literal"><span class="pre">advance()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pydebruijn.FeedbackShiftRegister.order">
+<code class="descname">order</code><a class="headerlink" href="#pydebruijn.FeedbackShiftRegister.order" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the order of the algebraic normal form.</p>
+<p>The order of a feedback shift register is also
+the size of its state.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>order</strong> &#8211; The order of the algebraic normal form.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">integer</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pydebruijn.FeedbackShiftRegister.sequence">
+<code class="descname">sequence</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pydebruijn.FeedbackShiftRegister.sequence" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the full sequence of the feedback shift register.</p>
+<p>Do keep the order of the feedback shift register in mind,
+as this method will try to return the entire sequence,
+no matter how big it is.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>sequence</strong> &#8211; The full sequence of the feedback shift register.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pydebruijn.FeedbackShiftRegister.state">
+<code class="descname">state</code><a class="headerlink" href="#pydebruijn.FeedbackShiftRegister.state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the current state of the algebraic normal form.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>state</strong> &#8211; The state of the algebraic normal form. Its elements
+are always only 0s and 1s.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-pydebruijn.helpers"></span><p>Module containing helper functions assisting the main classes.</p>
+<p>These helper functions fall into six categories:</p>
+<ul class="simple">
+<li>algebraic normal form functions</li>
+<li>binary polynomial functions</li>
+<li>boolean function functions</li>
+<li>graph functions</li>
+<li>Zech&#8217;s logarithm functions</li>
+<li>miscellaneous functions</li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to pydebruijn&#8217;s documentation!</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/api_doc.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Adamas Aqsa Fahreza, Martianus Frederic Ezerman.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="_sources/api_doc.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
