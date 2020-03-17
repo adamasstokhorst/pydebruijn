@@ -48,6 +48,8 @@ class ZechContainer(dict):
         KeyError
             If `key` does not belong in any coset.
         """
+        key %= self._modulo
+
         if key in self:
             return super(ZechContainer, self).__getitem__(key)
         else:
