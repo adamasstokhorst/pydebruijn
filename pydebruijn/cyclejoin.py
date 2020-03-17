@@ -353,7 +353,7 @@ class DeBruijnPoly(object):
         self._fsr = _FSR(anf, order=self._order, init_state=self._state)
 
 
-class DeBruijnZech(object):
+class DeBruijnZechSingle(object):
     """
     Class for generating de Bruijn sequences using Zech's logarithms.
 
@@ -569,3 +569,313 @@ class DeBruijnZech(object):
         anf = self.__get_algebraic_normal_form(*self._param_generator.next())
         self._fsr = _FSR(anf, order=self._order, init_state=self._state)
 
+
+class DeBruijnZechMultiple(object):
+    """
+    Class for generating de Bruijn sequences using Zech's logarithms.
+
+    This class uses stored Zech's logarithm values, as it is rather
+    expensive to compute them on the fly.
+
+    Multiple polynomials and t-values may be supplied, as long as they are
+    passed in order.
+
+    Parameters
+    ----------
+    p : Sympy.Poly object
+        A primitive binary polynomial.
+
+    t : integer
+        The decimation value to be applied to `p`.  If `p` is of
+        degree `n`, this value must necessarily divide `2**n - 1`,
+        but this is not a sufficient requirement.
+    """
+    def __init__(self, *args):
+        """
+        Initializes a de Bruijn sequence generator.
+
+        Parameters
+        ----------
+        p : Sympy.Poly object
+            A primitive binary polynomial.
+
+        t : integer
+            The decimation value to be applied to `p`.  If `p` is of
+            degree `n`, this value must necessarily divide `2**n - 1`,
+            but this is not a sufficient requirement.
+
+        Raises
+        ------
+        ValueError
+            If `p` is not primitive, or if `t` does not fulfill
+            a certain criterion, or if there is a missing argument.
+        """
+        # separate the arguments first
+        if len(args) % 2 != 0:
+            raise ValueError('unpaired argument exists')
+
+        polys = args[::2]
+        t_vals = args[1::2]
+        associates = zip(polys, t_vals)
+
+        # properties modifiable by user
+        self._state = None
+
+        # properties that are read-only
+        self._polys = []
+        self._states = []
+        self._associates = [{'associate': p,
+                             'period': (2 ** p.degree() - 1) / t,
+                             'order': t} for p, t in associates]
+        self._graph = _nx.MultiGraph()
+        self._poly = None
+        # self._t_value = t
+        self._order = 0
+        self._p_matrix = None
+        self._adjacency_matrix = None
+        self._param_generator = None
+        self._fsr = None
+
+        # probably should give this the same behavior as DeBruijnPoly
+        # that is, silently ignore improper arguments
+        for p, t in associates:
+            if not _is_primitive(p):
+                raise ValueError('polynomial not primitive: {}'.format(p.as_expr()))
+
+            q = _poly_decimation(p, t)
+            if (2 ** p.degree() - 1) % t != 0 or q is None:
+                raise ValueError('inappropriate t-value for {}: {}'.format(p, t))
+
+            if q not in self._polys:
+                self._polys.append(q)
+
+        self._poly = reduce(lambda a, b: a * b, self._polys)
+        self._order = self._poly.degree()
+
+        self._state = [0] * self._order
+        self._sym = _sympy.symbols('x_:{}'.format(self._order), integer=True)
+
+        self.__initialize()
+
+    def __initialize(self):
+        """
+        Method for actually initializing the de Bruijn sequence generator.
+
+        Users need not to run this method.
+        """
+        # populate states
+        for entry in self._associates:
+            states = []
+            degree = entry['associate'].degree()
+            init_state = [1] * degree
+            for i in xrange(entry['order']):
+                states.append(_seq_decimation(entry['associate'], entry['order'], i, init_state)[:degree])
+            states.append([0] * degree)
+            self._states.append(states)
+
+        # create P matrix and find special state
+        p_matrix = []
+        for poly in self._polys:
+            degree = poly.degree()
+            for i in xrange(degree):
+                state = [0] * degree
+                state[i] = 1
+                for j in xrange(self._order - degree):
+                    state.append(_lfsr_from_poly(poly, state[-degree:])[-1])
+                p_matrix += state
+        p_matrix = _sympy.Matrix(self._order, self._order, p_matrix)
+        self._p_matrix = p_matrix
+        special_state = map(int, _sympy.Matrix(1, self._order, [1] + [0] * (self._order - 1)) * p_matrix.inv_mod(2))
+        special_states = []
+        i = 0
+        for j, poly in enumerate(self._polys):
+            check_state = special_state[i:i + _sympy.degree(poly)]
+            cur_states = self._states[j]
+            for cur_shift in xrange(self._associates[j]['period']):
+                try:
+                    which = cur_states.index(check_state)
+                    if which == len(cur_states) - 1:
+                        special_states.append(0)
+                    else:
+                        special_states.append(self._associates[j]['order'] * cur_shift + which)
+                    break
+                except ValueError:
+                    cur_states = [_lfsr_from_poly(poly, s) for s in cur_states]
+                    continue
+            i += _sympy.degree(poly)
+
+        # so basically what's gonna happen is we gotta figure out the gamma_i such that
+        # it gives us the special state, for each polynomial
+        # so now the problem is finding which state, shifted how many times gives us the special state
+        # this is done, so we just need the second half
+        #
+        # then we must use the formula gamma_i + z(j - gamma_i) to obtain conjugate states
+        zech_logs = [_retrieve_zech_log(e['associate']) for e in self._associates]
+
+        # find conjugate pairs and construct adjacency graph
+        graph = self._graph
+        for z1_vals in _iters.product(*[range(1, 2**(e['associate'].degree()) - 1) for e in self._associates]):
+            t_vals = [self._associates[i]['order'] for i in xrange(len(z1_vals))]
+            z2_vals = []
+            for i, z in enumerate(z1_vals):
+                if z == special_states[i]:
+                    z2_vals.append(None)
+                else:
+                    conj_val = special_states[i] + zech_logs[i][z - special_states[i]]
+                    conj_val %= 2 ** self._polys[i].degree() - 1
+                    z2_vals.append(conj_val)
+
+            param_1, param_2 = [], []
+            shift_1, shift_2 = [], []
+            for i, z1, z2 in zip(range(len(z1_vals)), z1_vals, z2_vals):
+                if z2 is None:
+                    p1, p2 = z1 % t_vals[i], t_vals[i]
+                    s1, s2 = z1 / t_vals[i], 0
+                else:
+                    p1, p2 = z1 % t_vals[i], z2 % t_vals[i]
+                    s1, s2 = z1 / t_vals[i], z2 / t_vals[i]
+                param_1.append(p1)
+                param_2.append(p2)
+                shift_1.append(s1)
+                shift_2.append(s2)
+
+            param_1 = tuple(param_1)
+            param_2 = tuple(param_2)
+            graph.add_edge(param_1, param_2, shift={param_1: shift_1, param_2: shift_2})
+
+        self._adjacency_matrix = -_sympy.Matrix(_nx.to_numpy_matrix(self._graph)).applyfunc(int)
+        for i in range(self._adjacency_matrix.rows):
+            self._adjacency_matrix[i, i] -= sum(self._adjacency_matrix[i, :])
+
+        simple_graph = _nx.Graph(self._graph)
+        self._param_generator = self.__param_generator(_spanning_trees(simple_graph))
+
+        # if auto_arm:
+        anf = self.__get_algebraic_normal_form(*self._param_generator.next())
+        self._fsr = _FSR(anf, order=self._order, init_state=self._state)
+
+    def __param_generator(self, trees):
+        """
+        Method for generating sequence parameters from spanning trees.
+
+        Users need not to run this method.
+
+        See also
+        --------
+        __initialize
+        """
+        for tree in trees:
+            param_list = map(lambda a: [self._graph.get_edge_data(*a)[k]['shift'][a[0]]
+                                        for k in self._graph.get_edge_data(*a)], tree)
+            for param in _iters.product(*param_list):
+                yield tree, param
+
+    def __get_algebraic_normal_form(self, tree, param):
+        """
+        Method for generating the algebraic normal form of the feedback shift register.
+
+        Users need not to run this method.
+
+        See also
+        --------
+        __initialize
+        """
+        terms = [a[0][0] for a in self._poly.terms() if a[0][0] != self._order]
+        anf = sum([self._sym[a] for a in terms])
+
+        for w, (p1, p2) in enumerate(tree):
+            state = []
+            cur_state = list(p1)[:len(self._polys)]
+            for k in range(len(self._polys)):
+                sub_state = self._states[k][cur_state[k]]
+                for l in range(param[w][k]):
+                    sub_state = _lfsr_from_poly(self._polys[k], sub_state)
+                state += sub_state
+            state = (_sympy.Matrix(1, self._order, state) * self._p_matrix).applyfunc(lambda a: a % 2)[:]
+
+            anf += reduce(lambda a, b: a * b, [self._sym[a] + state[a] + 1 for a in range(1, self._order)])
+
+        return _sympy.Poly(anf, modulus=2).as_expr()
+
+    @property
+    def poly(self):
+        """
+        Returns the sequence's generating polynomial.
+
+        Equivalent to applying `t`-decimation to `p`.
+        """
+        return self._poly
+
+    @property
+    def order(self):
+        """
+        Returns the degree of the sequence's generating polynomial.
+
+        Equivalent to `.poly.degree()`.
+        """
+        return self._order
+
+    @property
+    def adjacency_matrix(self):
+        """
+        Returns the adjacency matrix of the connectivity graph.
+        """
+        return self._adjacency_matrix
+
+    @property
+    def fsr(self):
+        """
+        Returns the `FeedbackShiftRegister` object corresponding to the
+        current sequence.
+
+        See also
+        --------
+        FeedbackShiftRegister
+        """
+        return self._fsr
+
+    @property
+    def state(self):
+        """
+        Returns the current state of the feedback shift register.
+        """
+        return self.fsr.state
+
+    @state.setter
+    def state(self, iterable):
+        """
+        Sets the current state of the feedback shift register.
+
+        Parameters
+        ----------
+        iterable : any iterable object
+            Replace the current state with this iterable.  The resulting
+            state may not be the same as the given iterable.
+
+        See also
+        --------
+        FeedbackShiftRegister
+        """
+        self.fsr.state = iterable
+
+    def next_sequence(self):
+        """
+        Changes the parameters of the generator to generate a different
+        sequence.
+
+        Raises
+        ------
+        StopIteration
+            If the connectivity graph has yielded all possible
+            spanning trees.
+        """
+        # Method will raise StopIteration when sequences are exhausted, don't forget to handle it.
+        anf = self.__get_algebraic_normal_form(*self._param_generator.next())
+        self._fsr = _FSR(anf, order=self._order, init_state=self._state)
+
+
+def DeBruijnZech(*args):
+    if len(args) > 2:
+        return DeBruijnZechMultiple(*args)
+    else:
+        return DeBruijnZechSingle(*args)
