@@ -362,33 +362,22 @@ class DeBruijnZechSingle(object):
 
     Parameters
     ----------
-    p : Sympy.Poly object
-        A primitive binary polynomial.
-
-    t : integer
-        The decimation value to be applied to `p`.  If `p` is of
-        degree `n`, this value must necessarily divide `2**n - 1`,
-        but this is not a sufficient requirement.
+    p : Sympy.Poly object or binary string
+        An irreducible binary polynomial.
     """
-    def __init__(self, p, t):
+    def __init__(self, p):
         """
         Initializes a de Bruijn sequence generator.
 
         Parameters
         ----------
-        p : Sympy.Poly object
-            A primitive binary polynomial.
-
-        t : integer
-            The decimation value to be applied to `p`.  If `p` is of
-            degree `n`, this value must necessarily divide `2**n - 1`,
-            but this is not a sufficient requirement.
+        p : Sympy.Poly object or binary string
+            An irreducible binary polynomial.
 
         Raises
         ------
         ValueError
-            If `p` is not primitive, or if `t` does not fulfill
-            a certain criterion.
+            If `p` is not irreducible.
         """
         # properties modifiable by user
         self._state = None
@@ -396,23 +385,26 @@ class DeBruijnZechSingle(object):
         # properties that are read-only
         self._states = []
         self._graph = _nx.MultiGraph()
-        self._associate = p
+        self._associate = None
         self._poly = None
-        self._t_value = t
+        self._t_value = None
         self._order = 0
         self._adjacency_matrix = None
         self._param_generator = None
         self._fsr = None
 
-        self._order = self._associate.degree()
-        if not _is_primitive(p):
-            raise ValueError('polynomial not primitive: {}'.format(p.as_expr()))
-        if (2 ** self._order - 1) % t != 0 or _poly_decimation(p, t) is None:
-            raise ValueError('inappropriate t-value: {}'.format(t))
+        if isinstance(p, _sympy.Poly):
+            self._poly = p
+        elif isinstance(p, str):
+            binary_seq = map(lambda a: 0 if a == '0' else 1, p)
+            proto_poly = reduce(lambda a, b: a * _x + b, binary_seq, 0)
+            self._poly = _sympy.Poly(proto_poly, _x, modulus=2)
+        if not self._poly.is_irreducible:
+            raise ValueError('no irreducible polynomial supplied.')
+        self._order = self._poly.degree()
 
         self._state = [0] * self._order
         self._sym = _sympy.symbols('x_:{}'.format(self._order), integer=True)
-        self._poly = _poly_decimation(p, t)
 
         self.__initialize()
 
@@ -422,6 +414,11 @@ class DeBruijnZechSingle(object):
 
         Users need not to run this method.
         """
+        # get associate poly
+        associate = _get_associate_poly([self._poly])
+        self._t_value = associate[0]['order']
+        self._associate = associate[0]['associate']
+
         # populate states
         degree = self._order
         init_state = _get_special_state(self._associate, self._t_value)
@@ -582,13 +579,10 @@ class DeBruijnZechMultiple(object):
 
     Parameters
     ----------
-    p : Sympy.Poly object
-        A primitive binary polynomial.
-
-    t : integer
-        The decimation value to be applied to `p`.  If `p` is of
-        degree `n`, this value must necessarily divide `2**n - 1`,
-        but this is not a sufficient requirement.
+    *args : Sympy.Poly objects or binary strings
+        A variable number of irreducible binary polynomials. Can be given as
+        binary strings, where the most significant bit correspond to the term
+        with the biggest power.
     """
     def __init__(self, *args):
         """
@@ -596,27 +590,19 @@ class DeBruijnZechMultiple(object):
 
         Parameters
         ----------
-        p : Sympy.Poly object
-            A primitive binary polynomial.
-
-        t : integer
-            The decimation value to be applied to `p`.  If `p` is of
-            degree `n`, this value must necessarily divide `2**n - 1`,
-            but this is not a sufficient requirement.
+        *args : Sympy.Poly objects or binary strings
+            A variable number of irreducible binary polynomials. Can be given as
+            binary strings, where the most significant bit correspond to the term
+            with the biggest power.
 
         Raises
         ------
         ValueError
-            If `p` is not primitive, or if `t` does not fulfill
-            a certain criterion, or if there is a missing argument.
+            If no arguments are passed, or none of the supplied polynomials are
+            irreducible.
         """
-        # separate the arguments first
-        if len(args) % 2 != 0:
-            raise ValueError('unpaired argument exists')
-
-        polys = args[::2]
-        t_vals = args[1::2]
-        associates = zip(polys, t_vals)
+        if not args:
+            raise ValueError('no arguments passed (at least 1 expected)')
 
         # properties modifiable by user
         self._state = None
@@ -624,31 +610,30 @@ class DeBruijnZechMultiple(object):
         # properties that are read-only
         self._polys = []
         self._states = []
-        self._associates = [{'associate': p,
-                             'period': (2 ** p.degree() - 1) / t,
-                             'order': t} for p, t in associates]
+        self._associates = []
         self._graph = _nx.MultiGraph()
         self._poly = None
-        # self._t_value = t
         self._order = 0
         self._p_matrix = None
         self._adjacency_matrix = None
         self._param_generator = None
         self._fsr = None
 
-        # probably should give this the same behavior as DeBruijnPoly
-        # that is, silently ignore improper arguments
-        for p, t in associates:
-            if not _is_primitive(p):
-                raise ValueError('polynomial not primitive: {}'.format(p.as_expr()))
+        for arg in args:
+            if isinstance(arg, str):
+                binary_seq = map(lambda a: 0 if a == '0' else 1, arg)
+                proto_poly = reduce(lambda a, b: a * _x + b, binary_seq, 0)
+                poly = _sympy.Poly(proto_poly, _x, modulus=2)
+            elif isinstance(arg, _sympy.Poly):
+                poly = arg
+            else:
+                raise TypeError('unrecognized argument type (got {})'.format(type(arg)))
+            if poly.is_irreducible and poly not in self._polys:
+                self._polys.append(poly)
+        if not self._polys:
+            raise ValueError('no irreducible polynomial supplied.')
 
-            q = _poly_decimation(p, t)
-            if (2 ** p.degree() - 1) % t != 0 or q is None:
-                raise ValueError('inappropriate t-value for {}: {}'.format(p, t))
-
-            if q not in self._polys:
-                self._polys.append(q)
-
+        self._polys.sort(key=_sympy.degree)
         self._poly = reduce(lambda a, b: a * b, self._polys)
         self._order = self._poly.degree()
 
@@ -664,16 +649,17 @@ class DeBruijnZechMultiple(object):
         Users need not to run this method.
         """
         # populate states
+        self._associates = _get_associate_poly(self._polys)
         for entry in self._associates:
-            states = []
-            degree = entry['associate'].degree()
+            entry_state = []
+            degree = _sympy.degree(entry['associate'])
             init_state = [1] * degree
             for i in xrange(entry['order']):
-                states.append(_seq_decimation(entry['associate'], entry['order'], i, init_state)[:degree])
-            states.append([0] * degree)
-            self._states.append(states)
+                entry_state.append(_seq_decimation(entry['associate'], entry['order'], i, init_state)[:degree])
+            entry_state.append([0] * degree)
+            self._states.append(entry_state)
 
-        # create P matrix and find special state
+        # find special state
         p_matrix = []
         for poly in self._polys:
             degree = poly.degree()
@@ -704,12 +690,7 @@ class DeBruijnZechMultiple(object):
                     continue
             i += _sympy.degree(poly)
 
-        # so basically what's gonna happen is we gotta figure out the gamma_i such that
-        # it gives us the special state, for each polynomial
-        # so now the problem is finding which state, shifted how many times gives us the special state
-        # this is done, so we just need the second half
-        #
-        # then we must use the formula gamma_i + z(j - gamma_i) to obtain conjugate states
+        # get zech logs
         zech_logs = [_retrieve_zech_log(e['associate']) for e in self._associates]
 
         # find conjugate pairs and construct adjacency graph
@@ -739,9 +720,27 @@ class DeBruijnZechMultiple(object):
                 shift_1.append(s1)
                 shift_2.append(s2)
 
-            param_1 = tuple(param_1)
-            param_2 = tuple(param_2)
-            graph.add_edge(param_1, param_2, shift={param_1: shift_1, param_2: shift_2})
+            # lazy check if it's actually a conjugate pair
+            state_1 = []
+            state_2 = []
+            for i, p in enumerate(self._polys):
+                cur_state_1 = self._states[i][param_1[i]]
+                cur_state_2 = self._states[i][param_2[i]]
+                for j in range(shift_1[i]):
+                    cur_state_1 = _lfsr_from_poly(p, cur_state_1)
+                for j in range(shift_2[i]):
+                    cur_state_2 = _lfsr_from_poly(p, cur_state_2)
+                state_1 += cur_state_1
+                state_2 += cur_state_2
+            state_1 = (_sympy.Matrix(1, self._order, state_1) * self._p_matrix).applyfunc(lambda x: x % 2)
+            state_2 = (_sympy.Matrix(1, self._order, state_2) * self._p_matrix).applyfunc(lambda x: x % 2)
+            state_1[0] = 1 - state_1[0]
+            if state_1 == state_2:
+                param_1 = tuple(param_1)
+                param_2 = tuple(param_2)
+                graph.add_edge(param_1, param_2, shift={param_1: shift_1, param_2: shift_2})
+            else:
+                print state_1, state_2
 
         self._adjacency_matrix = -_sympy.Matrix(_nx.to_numpy_matrix(self._graph)).applyfunc(int)
         for i in range(self._adjacency_matrix.rows):
@@ -875,7 +874,7 @@ class DeBruijnZechMultiple(object):
 
 
 def DeBruijnZech(*args):
-    if len(args) > 2:
+    if len(args) > 1:
         return DeBruijnZechMultiple(*args)
     else:
         return DeBruijnZechSingle(*args)
