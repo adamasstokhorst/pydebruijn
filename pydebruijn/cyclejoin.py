@@ -694,13 +694,16 @@ class DeBruijnZechMultiple(object):
         zech_logs = [_retrieve_zech_log(e['associate']) for e in self._associates]
 
         # find conjugate pairs and construct adjacency graph
+        # in here, -1 represents -Inf (in Zech's logarithm)
         graph = self._graph
-        for z1_vals in _iters.product(*[range(1, 2**(e['associate'].degree()) - 1) for e in self._associates]):
+        for z1_vals in _iters.product(*[range(-1, 2**(e['associate'].degree()) - 1) for e in self._associates]):
             t_vals = [self._associates[i]['order'] for i in xrange(len(z1_vals))]
             z2_vals = []
             for i, z in enumerate(z1_vals):
                 if z == special_states[i]:
-                    z2_vals.append(None)
+                    z2_vals.append(-1)
+                elif z == -1:
+                    z2_vals.append(special_states[i])
                 else:
                     conj_val = special_states[i] + zech_logs[i][z - special_states[i]]
                     conj_val %= 2 ** self._polys[i].degree() - 1
@@ -709,9 +712,12 @@ class DeBruijnZechMultiple(object):
             param_1, param_2 = [], []
             shift_1, shift_2 = [], []
             for i, z1, z2 in zip(range(len(z1_vals)), z1_vals, z2_vals):
-                if z2 is None:
+                if z2 == -1:
                     p1, p2 = z1 % t_vals[i], t_vals[i]
                     s1, s2 = z1 / t_vals[i], 0
+                elif z1 == -1:
+                    p1, p2 = t_vals[i], z2 % t_vals[i]
+                    s1, s2 = 0, z2 / t_vals[i]
                 else:
                     p1, p2 = z1 % t_vals[i], z2 % t_vals[i]
                     s1, s2 = z1 / t_vals[i], z2 / t_vals[i]
@@ -735,12 +741,10 @@ class DeBruijnZechMultiple(object):
             state_1 = (_sympy.Matrix(1, self._order, state_1) * self._p_matrix).applyfunc(lambda x: x % 2)
             state_2 = (_sympy.Matrix(1, self._order, state_2) * self._p_matrix).applyfunc(lambda x: x % 2)
             state_1[0] = 1 - state_1[0]
-            if state_1 == state_2:
+            if state_1 == state_2 and param_1 > param_2:
                 param_1 = tuple(param_1)
                 param_2 = tuple(param_2)
                 graph.add_edge(param_1, param_2, shift={param_1: shift_1, param_2: shift_2})
-            else:
-                print state_1, state_2
 
         self._adjacency_matrix = -_sympy.Matrix(_nx.to_numpy_matrix(self._graph)).applyfunc(int)
         for i in range(self._adjacency_matrix.rows):
