@@ -726,22 +726,30 @@ class DeBruijnZechMultiple(object):
                 shift_1.append(s1)
                 shift_2.append(s2)
 
+            f1_vals = [1 if s == t_vals[i] else self._associates[i]['period'] for i, s in enumerate(param_1)]
+            f2_vals = [1 if s == t_vals[i] else self._associates[i]['period'] for i, s in enumerate(param_2)]
+            for i, s1, s2 in zip(range(len(z1_vals)), shift_1, shift_2):
+                modulus1 = _sympy.gcd(f1_vals[i], _sympy.ilcm(*([1, 1] + f1_vals[:i])))
+                modulus2 = _sympy.gcd(f2_vals[i], _sympy.ilcm(*([1, 1] + f2_vals[:i])))
+                param_1.append((s1 - shift_1[0]) % modulus1)
+                param_2.append((s2 - shift_2[0]) % modulus2)
+
             # lazy check if it's actually a conjugate pair
-            state_1 = []
-            state_2 = []
-            for i, p in enumerate(self._polys):
-                cur_state_1 = self._states[i][param_1[i]]
-                cur_state_2 = self._states[i][param_2[i]]
-                for j in range(shift_1[i]):
-                    cur_state_1 = _lfsr_from_poly(p, cur_state_1)
-                for j in range(shift_2[i]):
-                    cur_state_2 = _lfsr_from_poly(p, cur_state_2)
-                state_1 += cur_state_1
-                state_2 += cur_state_2
-            state_1 = (_sympy.Matrix(1, self._order, state_1) * self._p_matrix).applyfunc(lambda x: x % 2)
-            state_2 = (_sympy.Matrix(1, self._order, state_2) * self._p_matrix).applyfunc(lambda x: x % 2)
-            state_1[0] = 1 - state_1[0]
-            if state_1 == state_2 and param_1 > param_2:
+            # state_1 = []
+            # state_2 = []
+            # for i, p in enumerate(self._polys):
+            #     cur_state_1 = self._states[i][param_1[i]]
+            #     cur_state_2 = self._states[i][param_2[i]]
+            #     for j in range(shift_1[i]):
+            #         cur_state_1 = _lfsr_from_poly(p, cur_state_1)
+            #     for j in range(shift_2[i]):
+            #         cur_state_2 = _lfsr_from_poly(p, cur_state_2)
+            #     state_1 += cur_state_1
+            #     state_2 += cur_state_2
+            # state_1 = (_sympy.Matrix(1, self._order, state_1) * self._p_matrix).applyfunc(lambda x: x % 2)
+            # state_2 = (_sympy.Matrix(1, self._order, state_2) * self._p_matrix).applyfunc(lambda x: x % 2)
+            # state_1[0] = 1 - state_1[0]
+            if param_1 > param_2:  # and state_1 == state_2
                 param_1 = tuple(param_1)
                 param_2 = tuple(param_2)
                 graph.add_edge(param_1, param_2, shift={param_1: shift_1, param_2: shift_2})
