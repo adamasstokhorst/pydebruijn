@@ -127,3 +127,51 @@ def theorem_7(n, *k_values):
         table[binary] = next_state % 2
 
     return _FSR(_anf_from_truth_table(table, n), n, [0] * n)
+
+
+def theorem_9(n, k):
+    """
+    Implementation of Theorem 9 from "An Efficiently Generated Family of Binary de Bruijn Sequences".
+
+    Parameters
+    ----------
+    n : integer
+        The order of the resulting de Bruijn sequence. Must be at least 3.
+
+    k : integer
+        A positive integer strictly less than lcm(1, 2, 3, ..., n-2).
+
+    Returns
+    -------
+    fsr : FeedbackShiftRegister object
+        This FSR object represents the resulting de Bruijn sequence.
+
+    Raises
+    ------
+    ValueError
+        If any of the arguments does not satisfy the constraints.
+    """
+    # Validate values
+    if n < 3:
+        raise ValueError('n too small (got {})'.format(n))
+
+    delta = _sympy.lcm_list(range(1, n - 1))
+    if not 1 <= k <= delta:
+        raise ValueError('k out of bounds (got {})'.format(k))
+
+    # Construct truth table
+    table = {'0' * (n - 1): 1, '1' * (n - 1): 1}
+    for i in range(1, 2**(n - 1) - 1):
+        binary = bin(i)[2:]
+        binary = '{{:0>{}}}'.format(n - 1).format(binary)
+
+        state = [int(s) for s in binary]
+        next_state = state[0] + state[-1]
+        if state[0] == 0 and _is_conecklace(state):
+            next_state += 1
+        elif state[0] == 1 and _is_necklace(_lambda(state, k)):
+            next_state += 1
+
+        table[binary] = next_state % 2
+
+    return _FSR(_anf_from_truth_table(table, n), n, [0] * n)
