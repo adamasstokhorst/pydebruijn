@@ -1,8 +1,14 @@
 import sympy as _sympy
-from .helpers import order_from_anf as _order_from_anf, anf_from_truth_table as _anf_from_truth_table
+from .helpers import (
+    order_from_anf as _order_from_anf,
+    anf_from_truth_table as _anf_from_truth_table,
+    lambda_left_shift as _lambda,
+    is_necklace as _is_necklace,
+    is_conecklace as _is_conecklace
+)
 from .fsr import FeedbackShiftRegister as _FSR
 
-__all__ = ['gpo']
+__all__ = ['gpo', 'theorem_7']
 
 
 def gpo(func, init_state, order=None):
@@ -63,3 +69,61 @@ def gpo(func, init_state, order=None):
             break
 
     return _FSR(_anf_from_truth_table(table, order), order, [0] * order)
+
+
+def theorem_7(n, *k_values):
+    """
+    Implementation of Theorem 7 from "An Efficiently Generated Family of Binary de Bruijn Sequences".
+
+    Parameters
+    ----------
+    n : integer
+        The order of the resulting de Bruijn sequence. Must be at least 3.
+
+    k_values : list of integers
+        Distinct integers, as specified in the paper. Exclude k_1 and k_t.
+        The largest of these must be strictly less than n - 1.
+
+    Returns
+    -------
+    fsr : FeedbackShiftRegister object
+        This FSR object represents the resulting de Bruijn sequence.
+
+    Raises
+    ------
+    ValueError
+        If any of the arguments does not satisfy the constraints.
+    """
+    # Validate values
+    if n < 3:
+        raise ValueError('n too small (got {})'.format(n))
+
+    k_values = list(k_values) + [1, n]
+    k_values.sort()
+    if k_values[-2] >= n - 1:
+        raise ValueError('k_{{t-1}} too large (got {})'.format(k_values[-2]))
+
+    for i in range(len(k_values) - 1):
+        if k_values[i] >= k_values[i+1]:
+            raise ValueError('k values not distinct')
+
+    # Construct truth table
+    table = {'0' * (n - 1): 1, '1' * (n - 1): 1}
+    for i in range(1, 2**(n - 1) - 1):
+        binary = bin(i)[2:]
+        binary = '{{:0>{}}}'.format(n - 1).format(binary)
+
+        state = [int(s) for s in binary]
+        next_state = state[0] + state[-1]
+        if state[0] == 0 and _is_conecklace(state):
+            next_state += 1
+        elif state[0] == 1:
+            state_wt = sum(state)
+            k_comparison = [k <= state_wt for k in k_values]
+            index = k_comparison.index(False) - 1
+            if index >= 0 and _is_necklace(_lambda(state, k_values[index])):
+                next_state += 1
+
+        table[binary] = next_state % 2
+
+    return _FSR(_anf_from_truth_table(table, n), n, [0] * n)
