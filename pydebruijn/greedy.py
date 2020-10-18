@@ -103,6 +103,8 @@ def theorem_7(n, *k_values):
     k_values.sort()
     if k_values[-2] >= n - 1:
         raise ValueError('k_{{t-1}} too large (got {})'.format(k_values[-2]))
+    if k_values[1] <= 1:
+        raise ValueError('k_{{1}} too small (got {})'.format(k_values[1]))
 
     for i in range(len(k_values) - 1):
         if k_values[i] >= k_values[i+1]:
@@ -172,6 +174,69 @@ def theorem_9(n, k):
             next_state += 1
         elif state[0] == 1 and _is_necklace(_lambda(state, k)):
             next_state += 1
+
+        table[binary] = next_state % 2
+
+    return _FSR(_anf_from_truth_table(table, n), n, [0] * n)
+
+
+def theorem_11(n, *k_values):
+    """
+    Implementation of Theorem 11 from "An Efficiently Generated Family of Binary de Bruijn Sequences".
+
+    Parameters
+    ----------
+    n : integer
+        The order of the resulting de Bruijn sequence. Must be at least 3.
+
+    k_values : list of integers
+        Distinct integers, as specified in the paper. Exclude k_1 and k_t.
+        The largest of these must be strictly less than n - 1.
+
+    Returns
+    -------
+    fsr : FeedbackShiftRegister object
+        This FSR object represents the resulting de Bruijn sequence.
+
+    Raises
+    ------
+    ValueError
+        If any of the arguments does not satisfy the constraints.
+    """
+    # Validate values
+    if n < 3:
+        raise ValueError('n too small (got {})'.format(n))
+
+    k_values = list(k_values) + [1, n]
+    k_values.sort()
+    if k_values[-2] >= n - 1:
+        raise ValueError('k_{{t-1}} too large (got {})'.format(k_values[-2]))
+    if k_values[1] <= 1:
+        raise ValueError('k_2 too small (got {})'.format(k_values[1]))
+
+    for i in range(len(k_values) - 1):
+        if k_values[i] >= k_values[i+1]:
+            raise ValueError('k values not distinct')
+
+    # Construct truth table
+    table = {'0' * (n - 1): 1, '1' * (n - 1): 1}
+    for i in range(1, 2**(n - 1) - 1):
+        binary = bin(i)[2:]
+        binary = '{{:0>{}}}'.format(n - 1).format(binary)
+
+        state = [int(s) for s in binary]
+        u_state = [1 - s for s in state[:-1]] + [0]
+        w_state = [0] + state[:-1]
+        w_inv_state = [1 - s for s in w_state]
+        next_state = state[0] + state[-1]
+        if state[-1] == 1 and _is_conecklace(u_state):
+            next_state += 1
+        elif state[-1] == 0:
+            state_wt = sum(w_inv_state)
+            k_comparison = [k <= state_wt for k in k_values]
+            index = k_comparison.index(False) - 1
+            if index >= 0 and _is_necklace(_theta(w_state, k_values[index] - 1)):
+                next_state += 1
 
         table[binary] = next_state % 2
 
