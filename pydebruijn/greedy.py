@@ -3,6 +3,7 @@ from .helpers import (
     order_from_anf as _order_from_anf,
     anf_from_truth_table as _anf_from_truth_table,
     lambda_left_shift as _lambda,
+    theta_left_shift as _theta,
     is_necklace as _is_necklace,
     is_conecklace as _is_conecklace
 )
@@ -170,6 +171,54 @@ def theorem_9(n, k):
         if state[0] == 0 and _is_conecklace(state):
             next_state += 1
         elif state[0] == 1 and _is_necklace(_lambda(state, k)):
+            next_state += 1
+
+        table[binary] = next_state % 2
+
+    return _FSR(_anf_from_truth_table(table, n), n, [0] * n)
+
+
+def theorem_12(n, k):
+    """
+    Implementation of Theorem 12 from "An Efficiently Generated Family of Binary de Bruijn Sequences".
+
+    Parameters
+    ----------
+    n : integer
+        The order of the resulting de Bruijn sequence. Must be at least 2.
+
+    k : integer
+        A nonnegative integer.
+
+    Returns
+    -------
+    fsr : FeedbackShiftRegister object
+        This FSR object represents the resulting de Bruijn sequence.
+
+    Raises
+    ------
+    ValueError
+        If any of the arguments does not satisfy the constraints.
+    """
+    # Validate values
+    if n < 2:
+        raise ValueError('n too small (got {})'.format(n))
+    if k < 0:
+        raise ValueError('k must be nonnegative (got {})'.format(k))
+
+    # Construct truth table
+    table = {'0' * (n - 1): 1, '1' * (n - 1): 1}
+    for i in range(1, 2**(n - 1) - 1):
+        binary = bin(i)[2:]
+        binary = '{{:0>{}}}'.format(n - 1).format(binary)
+
+        state = [int(s) for s in binary]
+        u_state = [1 - s for s in state[:-1]] + [0]
+        w_state = [0] + state[:-1]
+        next_state = state[0] + state[-1]
+        if state[-1] == 1 and _is_conecklace(u_state):
+            next_state += 1
+        elif state[-1] == 0 and _is_necklace(_theta(w_state, k)):
             next_state += 1
 
         table[binary] = next_state % 2
