@@ -1,4 +1,4 @@
-__all__ = ['powerset', 'hamming_weight']
+__all__ = ['powerset', 'hamming_weight', 'lambda_left_shift', 'is_necklace', 'is_conecklace']
 
 
 def powerset(iterable, reverse=True):
@@ -39,3 +39,30 @@ def hamming_weight(n):
         c += 1
         n &= n - 1
     return c
+
+
+def lambda_left_shift(state, repeat=1):
+    """
+    Left shifts a state repeatedly such that the first 1 is at the end.
+    """
+    if repeat < 0:
+        raise ValueError('repeat must be non-negative. (got {})'.format(repeat))
+    elif repeat == 0:
+        return state
+    else:
+        shift_index = state.index(1) + 1
+        return lambda_left_shift(state[shift_index:] + state[:shift_index], repeat - 1)
+
+
+def is_necklace(state):
+    p = 1
+    for j in range(2, len(state) + 1):
+        if state[j-1] < state[j-1 - p]:
+            return False
+        if state[j-1] > state[j-1 - p]:
+            p = j
+    return len(state) % p == 0
+
+
+def is_conecklace(state):
+    return is_necklace(state + [1 - s for s in state])
